@@ -1,3 +1,8 @@
+# GitLab CI/CD Lab - Vihanga Kulasekara
+# Name: Vihanga Kulasekara
+# Port: 40208  (Birthday: 8 Feb 2001)
+# Branch: tst-assignment
+# Container: tst-vihanga_kulasekara_tst-assignment
 
 image: python:3.11
 
@@ -8,34 +13,40 @@ stages:
   - deploy
 
 variables:
-  IMAGE: "\${CI_PROJECT_NAME}:\${CI_COMMIT_SHORT_SHA}"
-  # Birthday 08 Feb 2001 -> month=2, day=8 -> 40000 + 208 = 40208
+  # App port based on birthday:
   PORT: "40208"
+  # Fixed container name required by the lab
+  CONTAINER_NAME: "tst-vihanga_kulasekara_tst-assignment"
 
+# Common Python setup for lint/test/build
 before_script:
   - python --version
-  - pip install --upgrade pip
+  - python -m pip install --upgrade pip
   - pip install -r app/requirements.txt
   - pip install flake8 pytest
 
-lint_flake8:
+# 1) LINT
+lint:
   stage: lint
   script:
-    - echo "Running flake8 linting..."
+    - echo "Running flake8..."
     - flake8 app
 
-test_pytest:
+# 2) TEST
+test:
   stage: test
   script:
-    - echo "Running tests with pytest..."
+    - echo "Running pytest..."
     - pytest
 
-build_app:
+# 3) BUILD (just compile to check syntax)
+build:
   stage: build
   script:
-    - echo "Build step – checking that the app compiles..."
+    - echo "Building (compiling) app..."
     - python -m py_compile app/app.py
 
+# 4) DEPLOY (only on tst-assignment in GitLab)
 deploy_test:
   stage: deploy
   image: docker:24.0.5
@@ -44,35 +55,17 @@ deploy_test:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+  # override global before_script (no Python here)
   before_script:
-    - echo "Starting Docker-in-Docker for TEST deploy..."
+    - echo "Using Docker-in-Docker for deploy..."
   rules:
-    - if: '\$CI_COMMIT_REF_NAME =~ /^tst-.*$/'
+    - if: '$CI_COMMIT_REF_NAME == "tst-assignment"'
   script:
-    - echo "Deploying TEST version for Vihanga on port \${PORT}..."
-    - docker build -t "tst-vihanga_kulasekara_\${CI_PROJECT_NAME}" .
-    - docker stop "tst-vihanga_kulasekara_\${CI_PROJECT_NAME}" || true
-    - docker rm "tst-vihanga_kulasekara_\${CI_PROJECT_NAME}" || true
-    - docker run -d -p \${PORT}:5000 --name "tst-vihanga_kulasekara_\${CI_PROJECT_NAME}" "tst-vihanga_kulasekara_\${CI_PROJECT_NAME}"
-    - echo "TEST app should be available at: http://<runner-host>:\${PORT}/"
-
-deploy_prod:
-  stage: deploy
-  image: docker:24.0.5
-  services:
-    - docker:24.0.5-dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  before_script:
-    - echo "Starting Docker-in-Docker for PROD deploy..."
-  rules:
-    - if: '\$CI_COMMIT_REF_NAME == "main" || \$CI_COMMIT_REF_NAME == "master"'
-  script:
-    - echo "Deploying PRODUCTION version for Vihanga on port \${PORT}..."
-    - docker build -t "prd-vihanga_kulasekara_\${CI_PROJECT_NAME}" .
-    - docker stop "prd-vihanga_kulasekara_\${CI_PROJECT_NAME}" || true
-    - docker rm "prd-vihanga_kulasekara_\${CI_PROJECT_NAME}" || true
-    - docker run -d -p \${PORT}:5000 --name "prd-vihanga_kulasekara_\${CI_PROJECT_NAME}" "prd-vihanga_kulasekara_\${CI_PROJECT_NAME}"
-    - echo "PROD app should be available at: http://<runner-host>:\${PORT}/"
-EOF
+    - echo "Building Docker image: ${CONTAINER_NAME}"
+    - docker build -t "${CONTAINER_NAME}" .
+    - echo "Stopping old container (if exists)..."
+    - docker stop "${CONTAINER_NAME}" || true
+    - docker rm "${CONTAINER_NAME}" || true
+    - echo "Running new container on port ${PORT} -> container port 5000"
+    - docker run -d -p ${PORT}:5000 --name "${CONTAINER_NAME}" "${CONTAINER_NAME}"
+    - echo "App should be available at: http://<runner-host>:${PORT}/"
