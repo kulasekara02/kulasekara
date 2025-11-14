@@ -57,15 +57,15 @@ deploy_test:
     DOCKER_TLS_CERTDIR: ""
   # override global before_script (no Python here)
   before_script:
-    - echo "Using Docker-in-Docker for deploy..."
+    - "echo \"Using Docker-in-Docker for deploy...\""
   rules:
     - if: '$CI_COMMIT_REF_NAME == "tst-assignment"'
   script:
-    - echo "Building Docker image: ${CONTAINER_NAME}"
-    - docker build -t "${CONTAINER_NAME}" .
-    - echo "Stopping old container (if exists)..."
-    - docker stop "${CONTAINER_NAME}" || true
-    - docker rm "${CONTAINER_NAME}" || true
-    - echo "Running new container on port ${PORT} -> container port 5000"
-    - docker run -d -p ${PORT}:5000 --name "${CONTAINER_NAME}" "${CONTAINER_NAME}"
-    - echo "App should be available at: http://<runner-host>:${PORT}/"
+    - "echo \"Building Docker image: ${CONTAINER_NAME}\""
+    - "docker build -t \"${CONTAINER_NAME}\" ."
+    - "echo \"Stopping old container (if exists)...\""
+    - "docker stop \"${CONTAINER_NAME}\" || true"
+    - "docker rm \"${CONTAINER_NAME}\" || true"
+    - "echo \"Running new container on port ${PORT} -> container port 5000\""
+    - "docker run -d -p ${PORT}:5000 --name \"${CONTAINER_NAME}\" \"${CONTAINER_NAME}\""
+    - "echo \"App should be available at: http://<runner-host>:${PORT}/\""
