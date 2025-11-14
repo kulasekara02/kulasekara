@@ -1,43 +1,39 @@
+image: python:3.11
+
+# Prevent submodule checkout (avoid fetching unreachable external hosts)
+variables:
+  GIT_SUBMODULE_STRATEGY: "none"
+
 stages:
   - lint
   - test
   - build
   - deploy
 
-# Reusable Python job template
-.default_python_job:
-  image: python:3.11
-  before_script:
-    - pip install --upgrade pip
+# Common setup for all jobs
+before_script:
+  - pip install --upgrade pip
 
-# 1) Lint stage
 lint:
   stage: lint
-  extends: .default_python_job
   script:
     - pip install flake8
     - flake8 app || true
 
-# 2) Test stage
-test_python_job:
+test:
   stage: test
-  extends: .default_python_job
   script:
     - pip install -r app/requirements.txt pytest
     - pytest -q
 
-# 3) Build stage (simple echo build)
 build:
   stage: build
-  extends: .default_python_job
   script:
     - pip install -r app/requirements.txt pyinstaller
     - echo "Build completed successfully for GitLab CI/CD Lab - Vihanga (port 40208)"
 
-# 4) Deploy stage (simulated/manual)
 deploy:
   stage: deploy
-  image: python:3.11
-  script:
-    - echo "Deploy step (simulation only) for Vihanga on port 40208"
   when: manual
+  script:
+    - echo "Deploy step (simulation only) for  on port 40208"
